@@ -34,7 +34,7 @@ def createTestJob(jobName, repoUrl) {
 }
 
 def buildPipelineJobs() {
-    def repo = "https://github.com/kcrane3576/"
+    def repo = "https://github.com/sshariqrizvi15/"
     def repoUrl = repo + jobName + ".git"
     def deployName = jobName + "_deploy"
     def testName = jobName + "_test"
