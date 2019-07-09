@@ -1,26 +1,29 @@
 def call(){
     node {
-        stage('Checkout') {
-            checkout scm
+        stage('Preparation') { // for display purposes
+                git 'https://github.com/sshariqrizvi15/pythonapp-withoutrds'
         }
-
-        // Execute different stages depending on the job
-        if(env.JOB_NAME.contains("deploy")){
-            packageArtifact()
-        } else if(env.JOB_NAME.contains("test")) {
-            buildAndTest()
+        
+        stage('Docker Push') {
+                withDockerRegistry(credentialsId: 'dockerid') {
+                    sh '''
+                    docker build -t shariqrizvi/flaskapp .
+                    docker push shariqrizvi/flaskapp
+                    '''
+                }
+        }
+        
+        stage('Results') {
+                sh label: '', script: '''#!/bin/sh
+                # This is a comment!
+                aws_instances=`aws ec2 describe-instances --filters Name=tag:Name,Values=ShariqPrivateInstance --query \'Reservations[].Instances[].[PrivateIpAddress]\' --output text`
+                for instance in $aws_instances
+                do
+                    sudo su - ec2-user -c "scp /home/ec2-user/python_app.sh ec2-user@${instance}:/home/ec2-user/python_app.sh"
+                    sudo su - ec2-user -c "ssh ec2-user@${instance} sudo chmod 777 /home/ec2-user/python_app.sh"
+                    sudo su - ec2-user -c "ssh ec2-user@${instance} ./python_app.sh"
+                done'''
         }
     }
-}
 
-def packageArtifact(){
-    stage("Package artifact") {
-        sh "mvn package"
-    }
-}
-
-def buildAndTest(){
-    stage("Backend tests"){
-        sh "mvn test"
-    }
 }
